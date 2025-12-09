@@ -7,7 +7,7 @@ class CitizenDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Citizen Dashboard"),
+        title: const Text("Welcome User"),
         centerTitle: true,
         backgroundColor: Colors.blue,
       ),
