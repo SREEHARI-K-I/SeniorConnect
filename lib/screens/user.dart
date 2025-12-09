@@ -56,12 +56,6 @@ class CitizenDashboard extends StatelessWidget {
 
                   _serviceCard(
                     context,
-                    icon: Icons.security,
-                    label: "Security",
-                  ),
-
-                  _serviceCard(
-                    context,
                     icon: Icons.cleaning_services,
                     label: "Cleaning",
                   ),
