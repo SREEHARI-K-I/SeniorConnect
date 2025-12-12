@@ -11,14 +11,22 @@ class VolunteerRegisterScreen extends StatefulWidget {
 
 class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   final nameController = TextEditingController();
+  final ageController = TextEditingController();
   final phoneController = TextEditingController();
   final wardController = TextEditingController();
   final panchayatController = TextEditingController();
+  final occupationController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Volunteer Registration")),
+      appBar: AppBar(
+        title: const Text("Volunteer Registration"),
+        centerTitle: true,
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -26,6 +34,11 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
             TextField(
               controller: nameController,
               decoration: const InputDecoration(labelText: "Full Name"),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Age"),
             ),
             const SizedBox(height: 15),
             TextField(
@@ -44,6 +57,11 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
               decoration: const InputDecoration(labelText: "Ward Number"),
             ),
             const SizedBox(height: 30),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Occupation"),
+            ),
+            const SizedBox(height: 15),
 
             ElevatedButton(
               onPressed: () {
@@ -61,10 +79,18 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
                 minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text("Register as Volunteer"),
+              child: const Text(
+                "Register",
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
