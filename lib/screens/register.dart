@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
+import 'package:senior_citizen_app/screens/volunregister.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -110,6 +111,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 minimumSize: const Size(double.infinity, 50),
               ),
               child: const Text("Register"),
+            ),
+
+            const SizedBox(height: 20),
+
+            OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const VolunteerRegisterScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                side: const BorderSide(color: Colors.blue),
+              ),
+              child: const Text(
+                "Register as Volunteer",
+                style: TextStyle(color: Colors.blue, fontSize: 16),
+              ),
             ),
 
             const SizedBox(height: 20),
