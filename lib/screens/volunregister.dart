@@ -37,7 +37,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
             ),
             const SizedBox(height: 15),
             TextField(
-              controller: nameController,
+              controller: ageController,
               decoration: const InputDecoration(labelText: "Age"),
             ),
             const SizedBox(height: 15),
@@ -58,7 +58,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
             ),
             const SizedBox(height: 30),
             TextField(
-              controller: nameController,
+              controller: occupationController,
               decoration: const InputDecoration(labelText: "Occupation"),
             ),
             const SizedBox(height: 15),

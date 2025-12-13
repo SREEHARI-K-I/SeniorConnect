@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:senior_citizen_app/screens/user.dart';
+import 'package:senior_citizen_app/screens/pending.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phone;
