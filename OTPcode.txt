@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:senior_citizen_app/screens/volunteer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:senior_citizen_app/screens/user.dart';
-import 'package:senior_citizen_app/screens/pending.dart';
-import 'package:senior_citizen_app/screens/volunteer.dart';
+
+// Dashboards
+import 'citizen_dashboard.dart';
+import 'volunteer_dashboard.dart';
+import 'admin_dashboard.dart';
+import 'approval_pending.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phone;
@@ -22,16 +24,50 @@ class OTPVerificationScreen extends StatefulWidget {
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final otpController = TextEditingController();
 
-  Future<void> completeLogin() async {
+  /// This function will later call BACKEND
+  Future<void> verifyAndRedirect() async {
+    // ✅ Store login session
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool("loggedIn", true);
 
+    // 🔁 MOCK BACKEND RESPONSE (change this to test)
+    final response = {
+      "role": "volunteer", // citizen | volunteer | admin
+      "approved": false,   // only for volunteer
+    };
+
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
-      (_) => false,
-    );
+
+    // 🔀 Role-based navigation
+    if (response["role"] == "admin") {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminDashboard()),
+        (_) => false,
+      );
+    } 
+    else if (response["role"] == "volunteer") {
+      if (response["approved"] == true) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
+          (_) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const ApprovalPendingScreen()),
+          (_) => false,
+        );
+      }
+    } 
+    else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const CitizenDashboard()),
+        (_) => false,
+      );
+    }
   }
 
   @override
@@ -61,8 +97,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
             ElevatedButton(
               onPressed: () {
+                // TEMP OTP check
                 if (otpController.text == "1234") {
-                  completeLogin();
+                  verifyAndRedirect();
                 }
               },
               style: ElevatedButton.styleFrom(
