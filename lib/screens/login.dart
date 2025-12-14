@@ -14,46 +14,75 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text("Login"),
         centerTitle: true,
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: "Phone Number"),
-              keyboardType: TextInputType.phone,
-            ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.phone_android, size: 90, color: Colors.blue.shade700),
 
-            const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
-            ElevatedButton(
-              onPressed: () {
-                if (phoneController.text.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OTPVerificationScreen(
-                        phone: phoneController.text.trim(),
-                        fromLogin: true,
-                      ),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+              const Text(
+                "Enter your phone number",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              child: const Text("Send OTP"),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 22),
+                decoration: InputDecoration(
+                  hintText: "Phone Number",
+                  filled: true,
+                  fillColor: Colors.blue.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              ElevatedButton(
+                onPressed: () {
+                  if (phoneController.text.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => OTPVerificationScreen(
+                          phone: phoneController.text.trim(),
+                          fromLogin: true,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 55),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+                child: const Text("Send OTP"),
+              ),
+            ],
+          ),
         ),
       ),
     );
