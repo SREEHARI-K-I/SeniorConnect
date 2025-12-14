@@ -29,7 +29,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
+      MaterialPageRoute(builder: (_) => const CitizenDashboard()),
       (_) => false,
     );
   }
@@ -40,6 +40,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       appBar: AppBar(
         title: Text(widget.fromLogin ? "Login OTP" : "Verify OTP"),
         centerTitle: true,
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),

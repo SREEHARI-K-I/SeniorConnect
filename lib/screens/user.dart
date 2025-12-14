@@ -19,7 +19,7 @@ class CitizenDashboard extends StatelessWidget {
           children: [
             const SizedBox(height: 10),
             const Text(
-              "Request for Services",
+              "Select Service Category",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Dashboards
 import 'citizen_dashboard.dart';
 import 'volunteer_dashboard.dart';
 import 'admin_dashboard.dart';
@@ -22,92 +21,135 @@ class OTPVerificationScreen extends StatefulWidget {
 }
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  final otpController = TextEditingController();
+  final List<TextEditingController> _otpControllers =
+      List.generate(4, (_) => TextEditingController());
 
-  /// This function will later call BACKEND
+  String get enteredOtp =>
+      _otpControllers.map((c) => c.text).join();
+
   Future<void> verifyAndRedirect() async {
-    // ✅ Store login session
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool("loggedIn", true);
 
-    // 🔁 MOCK BACKEND RESPONSE (change this to test)
+    // 🔁 Mock backend response
     final response = {
-      "role": "volunteer", // citizen | volunteer | admin
-      "approved": false,   // only for volunteer
+      "role": "citizen", // citizen | volunteer | admin
+      "approved": true,
     };
 
     if (!mounted) return;
 
-    // 🔀 Role-based navigation
     if (response["role"] == "admin") {
-      Navigator.pushAndRemoveUntil(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AdminDashboard()),
-        (_) => false,
       );
-    } 
-    else if (response["role"] == "volunteer") {
+    } else if (response["role"] == "volunteer") {
       if (response["approved"] == true) {
-        Navigator.pushAndRemoveUntil(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
-          (_) => false,
         );
       } else {
-        Navigator.pushAndRemoveUntil(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const ApprovalPendingScreen()),
-          (_) => false,
         );
       }
-    } 
-    else {
-      Navigator.pushAndRemoveUntil(
+    } else {
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const CitizenDashboard()),
-        (_) => false,
       );
     }
+  }
+
+  Widget _otpBox(int index) {
+    return SizedBox(
+      width: 60,
+      child: TextField(
+        controller: _otpControllers[index],
+        textAlign: TextAlign.center,
+        maxLength: 1,
+        keyboardType: TextInputType.number,
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+        ),
+        decoration: InputDecoration(
+          counterText: "",
+          filled: true,
+          fillColor: Colors.blue.shade50,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onChanged: (value) {
+          if (value.isNotEmpty && index < 3) {
+            FocusScope.of(context).nextFocus();
+          }
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.fromLogin ? "Login OTP" : "Verify OTP"),
+        title: const Text("OTP Verification"),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(
-              "Enter OTP sent to ${widget.phone}",
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: otpController,
-              decoration: const InputDecoration(labelText: "OTP"),
-              keyboardType: TextInputType.number,
-            ),
-
-            const SizedBox(height: 30),
-
-            ElevatedButton(
-              onPressed: () {
-                // TEMP OTP check
-                if (otpController.text == "1234") {
-                  verifyAndRedirect();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 90,
+                color: Colors.blue.shade700,
               ),
-              child: const Text("Verify OTP"),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Enter 4-digit OTP",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                "Sent to ${widget.phone}",
+                style: const TextStyle(fontSize: 16),
+              ),
+
+              const SizedBox(height: 30),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(4, (index) => _otpBox(index)),
+              ),
+
+              const SizedBox(height: 40),
+
+              ElevatedButton(
+                onPressed: () {
+                  if (enteredOtp == "1234") {
+                    verifyAndRedirect();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 55),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+                child: const Text("Verify OTP"),
+              ),
+            ],
+          ),
         ),
       ),
     );
