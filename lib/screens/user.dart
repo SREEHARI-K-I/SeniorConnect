@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:senior_citizen_app/screens/request_status.dart';
 
 class CitizenDashboard extends StatelessWidget {
   const CitizenDashboard({super.key});
@@ -73,7 +74,12 @@ class CitizenDashboard extends StatelessWidget {
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Navigate to request status screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RequestStatusScreen(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
