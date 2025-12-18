@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:senior_citizen_app/screens/volunteer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:senior_citizen_app/screens/user.dart';
 import 'package:senior_citizen_app/screens/pending.dart';
 import 'package:senior_citizen_app/screens/volunteer.dart';
+import 'package:senior_citizen_app/screens/admin.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String phone;
@@ -29,7 +29,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const CitizenDashboard()),
+      MaterialPageRoute(builder: (_) => const AdminDashboard()),
       (_) => false,
     );
   }

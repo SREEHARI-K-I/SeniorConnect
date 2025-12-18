@@ -77,7 +77,7 @@ class CitizenDashboard extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RequestStatusScreen(),
+                      builder: (context) => const RequestStatusListScreen(),
                     ),
                   );
                 },
