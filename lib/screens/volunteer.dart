@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/service_request.dart';
+import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/volunhistory.dart';
 
 class VolunteerDashboard extends StatelessWidget {
@@ -15,6 +16,18 @@ class VolunteerDashboard extends StatelessWidget {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (_) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

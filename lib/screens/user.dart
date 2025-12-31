@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/request_status.dart';
 
 class CitizenDashboard extends StatelessWidget {
@@ -11,6 +12,18 @@ class CitizenDashboard extends StatelessWidget {
         title: const Text("Welcome User"),
         centerTitle: true,
         backgroundColor: Colors.blue,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (_) => false,
+              );
+            },
+          ),
+        ],
       ),
 
       body: Padding(

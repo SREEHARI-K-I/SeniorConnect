@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/citizenrequest.dart';
 import 'package:senior_citizen_app/screens/volunrequest.dart';
+import 'package:senior_citizen_app/screens/volunteerlist.dart';
+import 'package:senior_citizen_app/screens/userlist.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -97,7 +99,12 @@ class AdminDashboard extends StatelessWidget {
                     title: "Citizens",
                     icon: Icons.people,
                     onTap: () {
-                      // Navigate to all users
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AllUsersScreen(),
+                        ),
+                      );
                     },
                   ),
 
@@ -105,7 +112,12 @@ class AdminDashboard extends StatelessWidget {
                     title: "Volunteers",
                     icon: Icons.group,
                     onTap: () {
-                      // Navigate to volunteers list
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AllVolunteersScreen(),
+                        ),
+                      );
                     },
                   ),
 
