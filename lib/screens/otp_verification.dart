@@ -29,7 +29,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const CitizenDashboard()),
+      MaterialPageRoute(builder: (_) => const AdminDashboard()),
       (_) => false,
     );
   }
