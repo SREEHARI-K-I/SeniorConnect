@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
+import 'package:senior_citizen_app/screens/aadhar_scanner_screen.dart';
 import 'package:senior_citizen_app/screens/volunregister.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -18,21 +19,81 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final wardController = TextEditingController();
   final houseController = TextEditingController();
   final healthController = TextEditingController();
+  final pinController = TextEditingController();
+  final housenameController = TextEditingController();
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+    phoneController.dispose();
+    panchayatController.dispose();
+    wardController.dispose();
+    houseController.dispose();
+    healthController.dispose();
+    pinController.dispose();
+    housenameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Register"),
-        centerTitle: true,
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
+        centerTitle: true,
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            /// 🔥 SCAN AADHAR BUTTON
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AadharScannerScreen(
+                      onDataExtracted: (data) {
+                        // ✅ Update name only if valid (not empty or unidentified)
+                        if (data.name != null &&
+                            data.name!.isNotEmpty &&
+                            data.name!.toLowerCase() != "unidentified") {
+                          nameController.text = data.name!;
+                        }
+
+                        // ✅ Update age only if valid
+                        if (data.age != null && data.age! > 0) {
+                          ageController.text = data.age!.toString();
+                        }
+
+                        // ✅ Update house name only if available
+                        if (data.houseName != null &&
+                            data.houseName!.isNotEmpty) {
+                          housenameController.text = data.houseName!;
+                        }
+
+                        // ✅ Update pincode only if available
+                        if (data.pincode != null && data.pincode!.isNotEmpty) {
+                          pinController.text = data.pincode!;
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.document_scanner),
+              label: const Text("Scan Aadhar Card (Both Sides)"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
             /// FULL NAME
             TextField(
               controller: nameController,
@@ -48,11 +109,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 15),
 
-            /// PHONE NUMBER
+            /// PHONE
             TextField(
               controller: phoneController,
               decoration: const InputDecoration(labelText: "Phone Number"),
               keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 15),
+
+            /// HOUSE NAME (From Back Side)
+            TextField(
+              controller: housenameController,
+              decoration: const InputDecoration(labelText: "House Name"),
+            ),
+            const SizedBox(height: 15),
+
+            /// HOUSE NUMBER
+            TextField(
+              controller: houseController,
+              decoration: const InputDecoration(labelText: "House Number"),
+            ),
+            const SizedBox(height: 15),
+
+            /// WARD
+            TextField(
+              controller: wardController,
+              decoration: const InputDecoration(labelText: "Ward Number"),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 15),
 
@@ -63,18 +146,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 15),
 
-            /// WARD NUMBER
+            /// PINCODE (From Back Side)
             TextField(
-              controller: wardController,
-              decoration: const InputDecoration(labelText: "Ward Number"),
+              controller: pinController,
+              decoration: const InputDecoration(labelText: "Pincode"),
               keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 15),
-
-            /// HOUSE NUMBER
-            TextField(
-              controller: houseController,
-              decoration: const InputDecoration(labelText: "House Number"),
             ),
             const SizedBox(height: 15),
 
@@ -92,8 +168,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             /// REGISTER BUTTON
             ElevatedButton(
               onPressed: () {
-                if (phoneController.text.isNotEmpty &&
-                    nameController.text.isNotEmpty) {
+                if (nameController.text.isNotEmpty &&
+                    phoneController.text.isNotEmpty) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -107,7 +183,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
               ),
               child: const Text("Register"),
@@ -115,12 +190,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             const SizedBox(height: 20),
 
+            /// VOLUNTEER BUTTON
             OutlinedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const VolunteerRegisterScreen(),
+                    builder: (_) => const VolunteerRegisterScreen(),
                   ),
                 );
               },
@@ -136,12 +212,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             const SizedBox(height: 20),
 
-            /// GO TO LOGIN
+            /// LOGIN BUTTON
             TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
               child: const Text(

@@ -3,8 +3,15 @@ import 'package:senior_citizen_app/screens/service_request.dart';
 import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/volunhistory.dart';
 
-class VolunteerDashboard extends StatelessWidget {
+class VolunteerDashboard extends StatefulWidget {
   const VolunteerDashboard({super.key});
+
+  @override
+  State<VolunteerDashboard> createState() => _VolunteerDashboardState();
+}
+
+class _VolunteerDashboardState extends State<VolunteerDashboard> {
+  bool isAvailable = false; // availability status
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +22,6 @@ class VolunteerDashboard extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -29,10 +35,11 @@ class VolunteerDashboard extends StatelessWidget {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Column(
           children: [
-            /// TOP PROFILE SECTION
+            /// 🔵 PROFILE + AVAILABILITY SECTION
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
@@ -44,14 +51,16 @@ class VolunteerDashboard extends StatelessWidget {
                 ),
               ),
               child: Column(
-                children: const [
-                  CircleAvatar(
+                children: [
+                  const CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, size: 50, color: Colors.blue),
                   ),
-                  SizedBox(height: 15),
-                  Text(
+
+                  const SizedBox(height: 15),
+
+                  const Text(
                     "Arun Kumar",
                     style: TextStyle(
                       color: Colors.white,
@@ -59,10 +68,67 @@ class VolunteerDashboard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 5),
-                  Text(
+
+                  const SizedBox(height: 5),
+
+                  const Text(
                     "Age: 28 | Phone: 9876543210",
                     style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// ✅ AVAILABILITY TOGGLE
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isAvailable ? Icons.check_circle : Icons.cancel,
+                              color: isAvailable
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent,
+                              size: 26,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              isAvailable
+                                  ? "Available for Service"
+                                  : "Not Available",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        Switch(
+                          value: isAvailable,
+                          activeColor: Colors.greenAccent,
+                          onChanged: (value) {
+                            setState(() {
+                              isAvailable = value;
+                            });
+
+                            /// TODO (Backend):
+                            /// Send availability status to API
+                            /// volunteer_id + isAvailable
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -70,12 +136,12 @@ class VolunteerDashboard extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            /// MAIN CONTENT AREA
+            /// 🔹 MAIN CONTENT
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  /// REWARD POINTS CARD
+                  /// REWARD POINTS
                   Card(
                     elevation: 4,
                     shape: RoundedRectangleBorder(
@@ -117,7 +183,7 @@ class VolunteerDashboard extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  /// VIEW PENDING REQUESTS BUTTON
+                  /// VIEW REQUESTS
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.push(
@@ -143,10 +209,9 @@ class VolunteerDashboard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
-
                   const SizedBox(height: 20),
 
+                  /// HISTORY
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(

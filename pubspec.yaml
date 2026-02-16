@@ -41,6 +41,19 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.2.3
 
+  # ===============================
+  # 📷 Aadhaar Scanner Dependencies
+  # ===============================
+
+  # To capture Aadhaar front & back image
+  image_picker: ^1.1.2
+
+  # Google ML Kit - Text Recognition (OCR)
+  google_mlkit_text_recognition: ^0.13.0
+
+  # To request Camera & Storage permissions at runtime
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
