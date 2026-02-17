@@ -14,6 +14,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final nameController = TextEditingController();
   final ageController = TextEditingController();
+  final genderController = TextEditingController();
   final phoneController = TextEditingController();
   final panchayatController = TextEditingController();
   final wardController = TextEditingController();
@@ -67,6 +68,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         if (data.age != null && data.age! > 0) {
                           ageController.text = data.age!.toString();
+                        }
+
+                        /// 🔥 ADD THIS FOR GENDER
+                        if (data.gender != null && data.gender!.isNotEmpty) {
+                          genderController.text = data.gender!;
                         }
                       },
                     ),
@@ -127,6 +133,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               controller: ageController,
               decoration: const InputDecoration(labelText: "Age"),
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: genderController,
+              decoration: const InputDecoration(labelText: "Gender"),
             ),
             const SizedBox(height: 15),
 

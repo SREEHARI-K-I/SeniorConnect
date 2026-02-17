@@ -32,6 +32,7 @@ class AadharScannerService {
       return AadharAutoFillModel(
         name: _extractName(text),
         age: _extractAge(text),
+        gender: _extractGender(text),
         pincode: "",
         houseName: "",
       );
@@ -39,6 +40,7 @@ class AadharScannerService {
       return AadharAutoFillModel(
         name: "",
         age: 0,
+        gender: "",
         pincode: _extractPincode(text),
         houseName: _extractHouseName(text),
       );
@@ -93,6 +95,20 @@ class AadharScannerService {
     return 0;
   }
 
+  String _extractGender(String text) {
+    text = text.toLowerCase();
+
+    RegExp femaleRegex = RegExp(r'\bfemale\b');
+    RegExp maleRegex = RegExp(r'\bmale\b');
+    RegExp transRegex = RegExp(r'\btransgender\b');
+
+    if (femaleRegex.hasMatch(text)) return "Female";
+    if (maleRegex.hasMatch(text)) return "Male";
+    if (transRegex.hasMatch(text)) return "Other";
+
+    return "";
+  }
+
   String _extractPincode(String text) {
     RegExp pinRegex = RegExp(r'\d{6}');
     Match? match = pinRegex.firstMatch(text);
@@ -101,10 +117,42 @@ class AadharScannerService {
 
   String _extractHouseName(String text) {
     List<String> lines = text.split('\n');
+    bool addressSectionStarted = false;
 
     for (String line in lines) {
-      if (line.contains(',')) {
-        return line.split(',').first.trim();
+      String cleanLine = line.trim();
+      if (cleanLine.isEmpty) continue;
+
+      String lowerLine = cleanLine.toLowerCase();
+
+      // Detect start of address block
+      if (lowerLine.contains("address")) {
+        addressSectionStarted = true;
+        continue;
+      }
+
+      if (!addressSectionStarted) continue;
+
+      // ❌ Skip guardian lines
+      if (lowerLine.contains("s/o") ||
+          lowerLine.contains("d/o") ||
+          lowerLine.contains("w/o") ||
+          lowerLine.contains("c/o"))
+        continue;
+
+      // ❌ Skip lines with digits (pincode, house number)
+      if (RegExp(r'\d').hasMatch(cleanLine)) continue;
+
+      // ❌ Skip likely state or country names
+      if (lowerLine.contains("kerala") ||
+          lowerLine.contains("india") ||
+          lowerLine.contains("tamil") ||
+          lowerLine.contains("karnataka"))
+        continue;
+
+      // ✅ Pick FULL CAPS line
+      if (cleanLine == cleanLine.toUpperCase() && cleanLine.length > 3) {
+        return cleanLine;
       }
     }
 
