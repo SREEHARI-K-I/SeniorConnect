@@ -4,8 +4,13 @@ import '../models/aadhar_autofill_model.dart';
 
 class AadharScannerScreen extends StatefulWidget {
   final Function(AadharAutoFillModel) onDataExtracted;
+  final bool isFront;
 
-  const AadharScannerScreen({super.key, required this.onDataExtracted});
+  const AadharScannerScreen({
+    super.key,
+    required this.onDataExtracted,
+    required this.isFront,
+  });
 
   @override
   State<AadharScannerScreen> createState() => _AadharScannerScreenState();
@@ -18,7 +23,7 @@ class _AadharScannerScreenState extends State<AadharScannerScreen> {
   Future<void> _startScan() async {
     setState(() => _loading = true);
 
-    final data = await _scannerService.scanAadhar();
+    final data = await _scannerService.scanAadhar(isFront: widget.isFront);
 
     setState(() => _loading = false);
 

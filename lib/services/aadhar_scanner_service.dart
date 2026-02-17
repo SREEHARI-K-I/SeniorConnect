@@ -6,7 +6,7 @@ import '../models/aadhar_autofill_model.dart';
 class AadharScannerService {
   final ImagePicker _picker = ImagePicker();
 
-  Future<AadharAutoFillModel?> scanAadhar() async {
+  Future<AadharAutoFillModel?> scanAadhar({required bool isFront}) async {
     final pickedFile = await _picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 85,
@@ -24,33 +24,63 @@ class AadharScannerService {
     textRecognizer.close();
     File(pickedFile.path).delete();
 
-    return _extractData(fullText);
+    return _extractData(fullText, isFront);
   }
 
-  AadharAutoFillModel _extractData(String text) {
-    return AadharAutoFillModel(
-      name: _extractName(text),
-      age: _extractAge(text),
-      pincode: _extractPincode(text),
-      houseName: _extractHouseName(text),
-    );
+  AadharAutoFillModel _extractData(String text, bool isFront) {
+    if (isFront) {
+      return AadharAutoFillModel(
+        name: _extractName(text),
+        age: _extractAge(text),
+        pincode: "",
+        houseName: "",
+      );
+    } else {
+      return AadharAutoFillModel(
+        name: "",
+        age: 0,
+        pincode: _extractPincode(text),
+        houseName: _extractHouseName(text),
+      );
+    }
   }
 
   String _extractName(String text) {
     List<String> lines = text.split('\n');
 
     for (String line in lines) {
-      if (line.trim().length > 3 &&
-          !RegExp(r'\d').hasMatch(line) &&
-          !line.toLowerCase().contains("government") &&
-          !line.toLowerCase().contains("india")) {
-        return line.trim();
-      }
+      String cleanLine = line.trim();
+      String lowerLine = cleanLine.toLowerCase();
+
+      if (cleanLine.length < 4) continue;
+
+      // ❌ Ignore lines containing numbers
+      if (RegExp(r'\d').hasMatch(cleanLine)) continue;
+
+      // ❌ Ignore common unwanted words
+      if (lowerLine.contains("government") ||
+          lowerLine.contains("india") ||
+          lowerLine.contains("address") ||
+          lowerLine.contains("dob") ||
+          lowerLine.contains("male") ||
+          lowerLine.contains("female") ||
+          lowerLine.contains("year") ||
+          lowerLine.contains("s/o") ||
+          lowerLine.contains("d/o") ||
+          lowerLine.contains("w/o") ||
+          lowerLine.contains("c/o"))
+        continue;
+
+      return cleanLine;
     }
+
     return "";
   }
 
   int _extractAge(String text) {
+    if (!text.toLowerCase().contains("dob")) {
+      return 0; // Back side won’t change age
+    }
     RegExp dobRegex = RegExp(r'\d{2}/\d{2}/\d{4}');
     Match? match = dobRegex.firstMatch(text);
 

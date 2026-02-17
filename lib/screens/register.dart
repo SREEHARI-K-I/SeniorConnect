@@ -50,32 +50,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           children: [
             /// 🔥 SCAN AADHAR BUTTON
+            /// 🔵 SCAN FRONT SIDE
             ElevatedButton.icon(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AadharScannerScreen(
+                      isFront: true,
                       onDataExtracted: (data) {
-                        // ✅ Update name only if valid (not empty or unidentified)
                         if (data.name != null &&
                             data.name!.isNotEmpty &&
                             data.name!.toLowerCase() != "unidentified") {
                           nameController.text = data.name!;
                         }
 
-                        // ✅ Update age only if valid
                         if (data.age != null && data.age! > 0) {
                           ageController.text = data.age!.toString();
                         }
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.credit_card),
+              label: const Text("Scan Aadhar Front Side"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
 
-                        // ✅ Update house name only if available
+            const SizedBox(height: 15),
+
+            /// 🟢 SCAN BACK SIDE
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AadharScannerScreen(
+                      isFront: false,
+                      onDataExtracted: (data) {
                         if (data.houseName != null &&
                             data.houseName!.isNotEmpty) {
                           housenameController.text = data.houseName!;
                         }
 
-                        // ✅ Update pincode only if available
                         if (data.pincode != null && data.pincode!.isNotEmpty) {
                           pinController.text = data.pincode!;
                         }
@@ -84,8 +105,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 );
               },
-              icon: const Icon(Icons.document_scanner),
-              label: const Text("Scan Aadhar Card (Both Sides)"),
+              icon: const Icon(Icons.home),
+              label: const Text("Scan Aadhar Back Side"),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 minimumSize: const Size(double.infinity, 50),
