@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/service_request.dart';
 import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/volunhistory.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class VolunteerDashboard extends StatefulWidget {
   const VolunteerDashboard({super.key});
@@ -25,7 +26,9 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
+            onPressed: () async {
+              await ApiService.clearSession();
+              if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -116,7 +119,7 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
 
                         Switch(
                           value: isAvailable,
-                          activeColor: Colors.greenAccent,
+                          activeThumbColor: Colors.greenAccent,
                           onChanged: (value) {
                             setState(() {
                               isAvailable = value;

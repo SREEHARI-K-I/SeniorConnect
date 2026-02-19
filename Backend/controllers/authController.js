@@ -1,167 +1,394 @@
-const db = require("../config/db");
+const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const db = require("../config/db");
 
+const OTP_EXPIRY_MINUTES = 5;
+const PHONE_REGEX = /^\d{10,15}$/;
+const OTP_REGEX = /^\d{6}$/;
 
-// ================= REGISTER =================
-exports.register = async (req, res) => {
+function dbQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+function normalizePhone(phone) {
+  return String(phone || "").replace(/\D/g, "");
+}
+
+function isValidPhone(phone) {
+  return PHONE_REGEX.test(phone);
+}
+
+function isValidOtp(otp) {
+  return OTP_REGEX.test(String(otp || ""));
+}
+
+function otpExpiryDate() {
+  return new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+}
+
+function generateOtp() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+function otpSecret() {
+  return process.env.OTP_SECRET || process.env.JWT_SECRET;
+}
+
+function hashOtp(otp) {
+  return crypto.createHmac("sha256", otpSecret()).update(otp).digest("hex");
+}
+
+function safeEqual(a, b) {
+  const left = Buffer.from(String(a || ""));
+  const right = Buffer.from(String(b || ""));
+
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+function shouldReturnOtpForTesting() {
+  return process.env.NODE_ENV !== "production";
+}
+
+function sendOtpResponse(res, message, otp) {
+  const payload = { message };
+  if (shouldReturnOtpForTesting()) {
+    payload.otp = otp;
+  }
+  return res.json(payload);
+}
+
+function createJwt(user) {
+  return jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d", algorithm: "HS256" }
+  );
+}
+
+async function getUserByPhone(phone) {
+  const result = await dbQuery(
+    `SELECT id,name,phone,age,gender,ward,panchayat,house_number,house_name,pincode,
+            health_issues,occupation,role,status,otp,otp_expiry,is_verified,password_hash
+     FROM users
+     WHERE phone = ?
+     LIMIT 1`,
+    [phone]
+  );
+
+  return result.length ? result[0] : null;
+}
+
+async function setOtp(phone, otp) {
+  await dbQuery(
+    "UPDATE users SET otp = ?, otp_expiry = ? WHERE phone = ?",
+    [hashOtp(otp), otpExpiryDate(), phone]
+  );
+}
+
+async function clearOtp(phone) {
+  await dbQuery("UPDATE users SET otp = NULL, otp_expiry = NULL WHERE phone = ?", [phone]);
+}
+
+function validateOtp(user, otp) {
+  if (!user.otp) {
+    return "Invalid OTP";
+  }
+
+  if (!safeEqual(user.otp, hashOtp(otp))) {
+    return "Invalid OTP";
+  }
+
+  if (!user.otp_expiry || new Date() > new Date(user.otp_expiry)) {
+    return "OTP expired";
+  }
+
+  return null;
+}
+
+function canUserLogin(user) {
+  if (!user.is_verified) {
+    return { status: 401, message: "Verify registration OTP first" };
+  }
+
+  if (user.status === "pending") {
+    return { status: 403, message: "Waiting admin approval" };
+  }
+
+  if (user.status === "rejected") {
+    return { status: 403, message: "Registration rejected" };
+  }
+
+  return null;
+}
+
+function validateBasicName(name) {
+  return typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 80;
+}
+
+exports.registerSenior = async (req, res) => {
   try {
-    const { name, phone, email, password, age, pincode, house_name } = req.body;
+    const {
+      name,
+      phone,
+      age,
+      gender,
+      ward,
+      panchayat,
+      house_number,
+      house_name,
+      pincode,
+      health_issues,
+      occupation
+    } = req.body;
 
-    if (!name || !phone || !password) {
-      return res.status(400).json({ message: "Required fields missing" });
+    const normalizedPhone = normalizePhone(phone);
+    if (!validateBasicName(name) || !isValidPhone(normalizedPhone)) {
+      return res.status(400).json({ message: "Valid name and phone are required" });
     }
 
-    db.query("SELECT * FROM users WHERE phone = ?", [phone], async (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
+    const existingUser = await getUserByPhone(normalizedPhone);
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
+    }
 
-      if (result.length > 0) {
-        return res.status(400).json({ message: "User already exists" });
-      }
+    const otp = generateOtp();
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await dbQuery(
+      `INSERT INTO users (
+        name, phone, age, gender, ward, panchayat, house_number, house_name,
+        pincode, health_issues, occupation, role, status, otp, otp_expiry, is_verified
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'senior', 'pending', ?, ?, 0)`,
+      [
+        name.trim(),
+        normalizedPhone,
+        age || null,
+        gender || null,
+        ward || null,
+        panchayat || null,
+        house_number || null,
+        house_name || null,
+        pincode || null,
+        health_issues || null,
+        occupation || null,
+        hashOtp(otp),
+        otpExpiryDate()
+      ]
+    );
 
-      db.query(
-        `INSERT INTO users 
-        (name, phone, email, password, age, pincode, house_name, otp, is_verified, status, role)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, FALSE, 'pending','user')`,
-        [name, phone, email, hashedPassword, age, pincode, house_name, otp],
-        (err) => {
-          if (err) return res.status(500).json({ error: err.message });
-
-          res.json({
-            message: "Registered successfully. Verify OTP.",
-            otp: otp
-          });
-        }
-      );
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    return sendOtpResponse(res, "Senior registration OTP sent", otp);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to register senior" });
   }
 };
 
+exports.registerVolunteer = async (req, res) => {
+  try {
+    const { name, phone, occupation } = req.body;
+    const normalizedPhone = normalizePhone(phone);
 
-// ================= VERIFY OTP =================
-exports.verifyOtp = (req, res) => {
-  const { phone, otp } = req.body;
+    if (!validateBasicName(name) || !isValidPhone(normalizedPhone)) {
+      return res.status(400).json({ message: "Valid name and phone are required" });
+    }
 
-  if (!phone || !otp) {
-    return res.status(400).json({ message: "Phone and OTP required" });
+    const existingUser = await getUserByPhone(normalizedPhone);
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
+    }
+
+    const otp = generateOtp();
+
+    await dbQuery(
+      `INSERT INTO users (
+        name, phone, occupation, role, status, otp, otp_expiry, is_verified
+      ) VALUES (?, ?, ?, 'volunteer', 'pending', ?, ?, 0)`,
+      [name.trim(), normalizedPhone, occupation || null, hashOtp(otp), otpExpiryDate()]
+    );
+
+    return sendOtpResponse(res, "Volunteer registration OTP sent", otp);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to register volunteer" });
   }
-
-  db.query("SELECT * FROM users WHERE phone = ?", [phone], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (result.length === 0) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    const user = result[0];
-
-    if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    db.query(
-      "UPDATE users SET is_verified = TRUE, otp = NULL WHERE phone = ?",
-      [phone],
-      (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        res.json({
-          message: "OTP verified successfully. Waiting for admin approval."
-        });
-      }
-    );
-  });
 };
 
+exports.verifyRegisterOtp = async (req, res) => {
+  try {
+    const normalizedPhone = normalizePhone(req.body.phone);
+    const otp = String(req.body.otp || "").trim();
 
-/// ================= LOGIN STEP 1 =================
-// Check password and SEND OTP
-exports.login = (req, res) => {
-  const { phone, password } = req.body;
+    if (!isValidPhone(normalizedPhone) || !isValidOtp(otp)) {
+      return res.status(400).json({ message: "Valid phone and 6-digit OTP are required" });
+    }
 
-  db.query("SELECT * FROM users WHERE phone = ?", [phone], async (err, result) => {
-    if (err) return res.status(500).json(err);
-    if (result.length === 0)
+    const user = await getUserByPhone(normalizedPhone);
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
 
-    const user = result[0];
+    if (!["senior", "volunteer"].includes(user.role)) {
+      return res.status(403).json({ message: "Only senior/volunteer registration is supported" });
+    }
 
-    // Must be registered & approved first
-    // 🔴 Check registration OTP verified
-    if (!user.is_verified)
-    return res.status(401).json({ message: "Please verify OTP first" });
+    const otpError = validateOtp(user, otp);
+    if (otpError) {
+      return res.status(400).json({ message: otpError });
+    }
 
-    // 🔴 Check admin approval status
-    if (user.status === "pending")
-    return res.status(403).json({ message: "Waiting for admin approval" });
-
-    if (user.status === "rejected")
-    return res.status(403).json({ message: "Admin rejected your request" });
-
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(401).json({ message: "Invalid password" });
-
-    // 🔥 Generate LOGIN OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    db.query(
-      "UPDATE users SET otp = ?, otp_expiry = ? WHERE phone = ?",
-      [otp, expiry, phone],
-      () => {
-        res.json({
-          message: "Password correct. Enter OTP to login.",
-          otp: otp // testing only
-        });
-      }
+    await dbQuery(
+      "UPDATE users SET is_verified = 1, otp = NULL, otp_expiry = NULL WHERE phone = ?",
+      [normalizedPhone]
     );
-  });
+
+    return res.json({ message: "OTP verified. Waiting admin approval." });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to verify registration OTP" });
+  }
 };
-// ================= LOGIN STEP 2 =================
-// Verify OTP and GIVE TOKEN
-exports.loginVerifyOtp = (req, res) => {
-  const { phone, otp } = req.body;
 
-  db.query("SELECT * FROM users WHERE phone = ?", [phone], (err, result) => {
-    if (err) return res.status(500).json(err);
-    if (result.length === 0)
+exports.userLoginStep1 = async (req, res) => {
+  try {
+    const normalizedPhone = normalizePhone(req.body.phone);
+    if (!isValidPhone(normalizedPhone)) {
+      return res.status(400).json({ message: "Valid phone is required" });
+    }
+
+    const user = await getUserByPhone(normalizedPhone);
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
 
-    const user = result[0];
+    if (!["senior", "volunteer"].includes(user.role)) {
+      return res.status(403).json({ message: "Use admin login for admin accounts" });
+    }
 
-    if (user.otp !== otp)
-      return res.status(400).json({ message: "Invalid OTP" });
+    const loginEligibility = canUserLogin(user);
+    if (loginEligibility) {
+      return res.status(loginEligibility.status).json({ message: loginEligibility.message });
+    }
 
-    if (new Date() > user.otp_expiry)
-      return res.status(400).json({ message: "OTP expired" });
+    const otp = generateOtp();
+    await setOtp(normalizedPhone, otp);
 
-    // Clear OTP
-    db.query("UPDATE users SET otp = NULL WHERE phone = ?", [phone]);
+    return sendOtpResponse(res, "Login OTP sent", otp);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to send login OTP" });
+  }
+};
 
-    // 🎟 Create JWT
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+exports.userLoginStep2 = async (req, res) => {
+  try {
+    const normalizedPhone = normalizePhone(req.body.phone);
+    const otp = String(req.body.otp || "").trim();
 
-    res.json({
-      message: "Login successful",
+    if (!isValidPhone(normalizedPhone) || !isValidOtp(otp)) {
+      return res.status(400).json({ message: "Valid phone and 6-digit OTP are required" });
+    }
+
+    const user = await getUserByPhone(normalizedPhone);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!["senior", "volunteer"].includes(user.role)) {
+      return res.status(403).json({ message: "Use admin login for admin accounts" });
+    }
+
+    const loginEligibility = canUserLogin(user);
+    if (loginEligibility) {
+      return res.status(loginEligibility.status).json({ message: loginEligibility.message });
+    }
+
+    const otpError = validateOtp(user, otp);
+    if (otpError) {
+      return res.status(400).json({ message: otpError });
+    }
+
+    const token = createJwt(user);
+    await clearOtp(normalizedPhone);
+
+    return res.json({
+      message: "Login success",
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone
-      }
+      role: user.role,
+      name: user.name,
+      status: user.status
     });
-  });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to verify login OTP" });
+  }
 };
 
+exports.adminLoginStep1 = async (req, res) => {
+  try {
+    const normalizedPhone = normalizePhone(req.body.phone);
+    const password = String(req.body.password || "");
+
+    if (!isValidPhone(normalizedPhone) || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ message: "Valid phone and password are required" });
+    }
+
+    const user = await getUserByPhone(normalizedPhone);
+    if (!user || user.role !== "admin") {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.password_hash) {
+      return res.status(500).json({ message: "Admin password is not configured" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const otp = generateOtp();
+    await setOtp(normalizedPhone, otp);
+
+    return sendOtpResponse(res, "Admin login OTP sent", otp);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to process admin login" });
+  }
+};
+
+exports.adminLoginStep2 = async (req, res) => {
+  try {
+    const normalizedPhone = normalizePhone(req.body.phone);
+    const otp = String(req.body.otp || "").trim();
+
+    if (!isValidPhone(normalizedPhone) || !isValidOtp(otp)) {
+      return res.status(400).json({ message: "Valid phone and 6-digit OTP are required" });
+    }
+
+    const user = await getUserByPhone(normalizedPhone);
+    if (!user || user.role !== "admin") {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const otpError = validateOtp(user, otp);
+    if (otpError) {
+      return res.status(400).json({ message: otpError });
+    }
+
+    const token = createJwt(user);
+    await clearOtp(normalizedPhone);
+
+    return res.json({
+      message: "Admin login success",
+      token,
+      role: user.role,
+      name: user.name
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to verify admin OTP" });
+  }
+};
+
+// Backward-compatible aliases for existing Flutter calls.
+exports.loginOtpStep1 = exports.userLoginStep1;
+exports.loginOtpStep2 = exports.userLoginStep2;

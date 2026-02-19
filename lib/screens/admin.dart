@@ -1,11 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/citizenrequest.dart';
+import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/volunrequest.dart';
 import 'package:senior_citizen_app/screens/volunteerlist.dart';
 import 'package:senior_citizen_app/screens/userlist.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
-class AdminDashboard extends StatelessWidget {
+class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
+
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  bool isLoadingStats = true;
+  Map<String, dynamic> stats = <String, dynamic>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => isLoadingStats = true);
+    try {
+      final data = await ApiService.getAdminStats();
+      if (!mounted) return;
+      setState(() => stats = data);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoadingStats = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +95,32 @@ class AdminDashboard extends StatelessWidget {
 
           const SizedBox(height: 20),
 
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: isLoadingStats
+                ? const LinearProgressIndicator()
+                : Row(
+                    children: [
+                      _statCard(
+                        label: "Users",
+                        value: "${stats["total_users"] ?? 0}",
+                      ),
+                      const SizedBox(width: 10),
+                      _statCard(
+                        label: "Pending",
+                        value: "${stats["pending_requests"] ?? 0}",
+                      ),
+                      const SizedBox(width: 10),
+                      _statCard(
+                        label: "Volunteers",
+                        value: "${stats["volunteers"] ?? 0}",
+                      ),
+                    ],
+                  ),
+          ),
+
+          const SizedBox(height: 18),
+
           /// 📋 ACTION BUTTONS
           Expanded(
             child: Padding(
@@ -72,26 +130,28 @@ class AdminDashboard extends StatelessWidget {
                   _actionTile(
                     title: "Volunteer Requests",
                     icon: Icons.volunteer_activism,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const VolunteerRequestsScreen(),
                         ),
                       );
+                      _loadStats();
                     },
                   ),
 
                   _actionTile(
                     title: "Citizen Requests",
                     icon: Icons.person_add_alt,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const CitizenRequestsScreen(),
                         ),
                       );
+                      _loadStats();
                     },
                   ),
 
@@ -125,8 +185,14 @@ class AdminDashboard extends StatelessWidget {
 
                   /// 🚪 LOGOUT BUTTON
                   ElevatedButton(
-                    onPressed: () {
-                      // Clear shared prefs & go to login
+                    onPressed: () async {
+                      await ApiService.clearSession();
+                      if (!context.mounted) return;
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (_) => false,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 55),
@@ -187,6 +253,29 @@ class AdminDashboard extends StatelessWidget {
               const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statCard({required String label, required String value}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.shade100),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
         ),
       ),
     );

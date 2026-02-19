@@ -70,8 +70,9 @@ class AadharScannerService {
           lowerLine.contains("s/o") ||
           lowerLine.contains("d/o") ||
           lowerLine.contains("w/o") ||
-          lowerLine.contains("c/o"))
+          lowerLine.contains("c/o")) {
         continue;
+      }
 
       return cleanLine;
     }
@@ -137,8 +138,9 @@ class AadharScannerService {
       if (lowerLine.contains("s/o") ||
           lowerLine.contains("d/o") ||
           lowerLine.contains("w/o") ||
-          lowerLine.contains("c/o"))
+          lowerLine.contains("c/o")) {
         continue;
+      }
 
       // ❌ Skip lines with digits (pincode, house number)
       if (RegExp(r'\d').hasMatch(cleanLine)) continue;
@@ -147,8 +149,9 @@ class AadharScannerService {
       if (lowerLine.contains("kerala") ||
           lowerLine.contains("india") ||
           lowerLine.contains("tamil") ||
-          lowerLine.contains("karnataka"))
+          lowerLine.contains("karnataka")) {
         continue;
+      }
 
       // ✅ Pick FULL CAPS line
       if (cleanLine == cleanLine.toUpperCase() && cleanLine.length > 3) {

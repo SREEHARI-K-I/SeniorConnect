@@ -3,6 +3,7 @@ import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/request_status.dart';
 import 'package:senior_citizen_app/screens/volunavail.dart';
 import 'package:senior_citizen_app/screens/emergency_status.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class CitizenDashboard extends StatelessWidget {
   const CitizenDashboard({super.key});
@@ -18,7 +19,9 @@ class CitizenDashboard extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
+            onPressed: () async {
+              await ApiService.clearSession();
+              if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const LoginScreen()),

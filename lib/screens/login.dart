@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:senior_citizen_app/screens/admin_login.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,6 +12,32 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final phoneController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> _sendOtp() async {
+    final phone = phoneController.text.trim();
+    if (phone.isEmpty) return;
+
+    setState(() => isLoading = true);
+    try {
+      await ApiService.sendUserLoginOtp(phone: phone);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              OTPVerificationScreen(phone: phone, flow: OtpFlow.userLogin),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,26 +88,43 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 30),
 
               ElevatedButton(
-                onPressed: () {
-                  if (phoneController.text.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => OTPVerificationScreen(
-                          phone: phoneController.text.trim(),
-                          fromLogin: true,
-                        ),
-                      ),
-                    );
-                  }
-                },
+                onPressed: isLoading ? null : _sendOtp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 55),
                   textStyle: const TextStyle(fontSize: 18),
                 ),
-                child: const Text("Send OTP"),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : const Text("Send OTP"),
+              ),
+
+              const SizedBox(height: 12),
+
+              OutlinedButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminLoginScreen(),
+                          ),
+                        );
+                      },
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  side: const BorderSide(color: Colors.blue),
+                ),
+                child: const Text("Admin Login"),
               ),
             ],
           ),

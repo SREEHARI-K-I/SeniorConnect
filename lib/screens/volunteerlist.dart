@@ -1,67 +1,127 @@
 import 'package:flutter/material.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
-class AllVolunteersScreen extends StatelessWidget {
+class AllVolunteersScreen extends StatefulWidget {
   const AllVolunteersScreen({super.key});
+
+  @override
+  State<AllVolunteersScreen> createState() => _AllVolunteersScreenState();
+}
+
+class _AllVolunteersScreenState extends State<AllVolunteersScreen> {
+  bool isLoading = true;
+  List<Map<String, dynamic>> volunteers = <Map<String, dynamic>>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVolunteers();
+  }
+
+  Future<void> _loadVolunteers() async {
+    setState(() => isLoading = true);
+    try {
+      final data = await ApiService.getAllVolunteers();
+      if (!mounted) return;
+      setState(() => volunteers = data);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  String _statusLabel(Map<String, dynamic> volunteer) {
+    final status = (volunteer['status'] ?? '').toString();
+    final verified = volunteer['is_verified'] == 1;
+    if (!verified) return 'Unverified';
+    if (status.isEmpty) return 'Unknown';
+    return status[0].toUpperCase() + status.substring(1);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("All Volunteers"),
+        title: const Text('All Volunteers'),
         centerTitle: true,
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 4, // dummy volunteers
-        itemBuilder: (context, index) {
-          return Card(
-            elevation: 3,
-            margin: const EdgeInsets.only(bottom: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.green,
-                child: Icon(Icons.volunteer_activism, color: Colors.white),
-              ),
-              title: const Text(
-                "Arun Kumar",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text("Phone: 9876543210\nServices Done: 12"),
-              isThreeLine: true,
-              trailing: ElevatedButton(
-                onPressed: () {
-                  _showReportDialog(context);
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : volunteers.isEmpty
+          ? const Center(child: Text('No volunteers found'))
+          : RefreshIndicator(
+              onRefresh: _loadVolunteers,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: volunteers.length,
+                itemBuilder: (context, index) {
+                  final volunteer = volunteers[index];
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: Colors.green,
+                        child: Icon(
+                          Icons.volunteer_activism,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        (volunteer['name'] ?? '-').toString(),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Phone: ${volunteer['phone'] ?? '-'}\n'
+                        'Ward: ${volunteer['ward'] ?? '-'} | '
+                        'Panchayat: ${volunteer['panchayat'] ?? '-'}\n'
+                        'Status: ${_statusLabel(volunteer)}',
+                      ),
+                      isThreeLine: true,
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          _showReportDialog(context, volunteer);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: const Text('Details'),
+                      ),
+                    ),
+                  );
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                child: const Text("Report"),
               ),
             ),
-          );
-        },
-      ),
     );
   }
 
-  void _showReportDialog(BuildContext context) {
+  void _showReportDialog(BuildContext context, Map<String, dynamic> volunteer) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Volunteer Report"),
-        content: const Text(
-          "Total Services Completed: 12\n"
-          "Medical Assistance: 5\n"
-          "Grocery Help: 4\n"
-          "Emergency Support: 3",
+        title: Text((volunteer['name'] ?? 'Volunteer').toString()),
+        content: Text(
+          'Phone: ${volunteer['phone'] ?? '-'}\n'
+          'Age: ${volunteer['age'] ?? '-'}\n'
+          'Gender: ${volunteer['gender'] ?? '-'}\n'
+          'Ward: ${volunteer['ward'] ?? '-'}\n'
+          'Panchayat: ${volunteer['panchayat'] ?? '-'}\n'
+          'Occupation: ${volunteer['occupation'] ?? '-'}\n'
+          'Status: ${_statusLabel(volunteer)}',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: const Text('Close'),
           ),
         ],
       ),

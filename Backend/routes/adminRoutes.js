@@ -5,8 +5,17 @@ const adminController = require("../controllers/adminController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const { isAdmin } = require("../middleware/adminMiddleware");
 
-router.get("/pending-users", verifyToken, isAdmin, adminController.getPendingUsers);
+/////////////////////////////////////////////////
+// ADMIN ROUTES
+/////////////////////////////////////////////////
+
+router.get("/stats", verifyToken, isAdmin, adminController.getAdminStats);
+
+router.get("/pending-seniors", verifyToken, isAdmin, adminController.getPendingSeniors);
+router.get("/pending-volunteers", verifyToken, isAdmin, adminController.getPendingVolunteers);
+router.get("/volunteers", verifyToken, isAdmin, adminController.getAllVolunteers);
+
 router.put("/approve/:userId", verifyToken, isAdmin, adminController.approveUser);
-router.delete("/reject/:userId", verifyToken, isAdmin, adminController.rejectUser);
+router.put("/reject/:userId", verifyToken, isAdmin, adminController.rejectUser);
 
 module.exports = router;

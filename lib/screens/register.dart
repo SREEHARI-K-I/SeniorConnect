@@ -3,6 +3,7 @@ import 'package:senior_citizen_app/screens/login.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
 import 'package:senior_citizen_app/screens/aadhar_scanner_screen.dart';
 import 'package:senior_citizen_app/screens/volunregister.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final healthController = TextEditingController();
   final pinController = TextEditingController();
   final housenameController = TextEditingController();
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -35,6 +37,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     pinController.dispose();
     housenameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _registerSenior() async {
+    final name = nameController.text.trim();
+    final phone = phoneController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty) return;
+
+    setState(() => isLoading = true);
+    try {
+      await ApiService.registerSenior(
+        name: name,
+        phone: phone,
+        age: ageController.text.trim(),
+        gender: genderController.text.trim(),
+        ward: wardController.text.trim(),
+        panchayat: panchayatController.text.trim(),
+        houseNumber: houseController.text.trim(),
+        houseName: housenameController.text.trim(),
+        pincode: pinController.text.trim(),
+        healthIssues: healthController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              OTPVerificationScreen(phone: phone, flow: OtpFlow.seniorRegister),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -60,19 +101,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     builder: (_) => AadharScannerScreen(
                       isFront: true,
                       onDataExtracted: (data) {
-                        if (data.name != null &&
-                            data.name!.isNotEmpty &&
-                            data.name!.toLowerCase() != "unidentified") {
-                          nameController.text = data.name!;
+                        if (data.name.isNotEmpty &&
+                            data.name.toLowerCase() != "unidentified") {
+                          nameController.text = data.name;
                         }
 
-                        if (data.age != null && data.age! > 0) {
-                          ageController.text = data.age!.toString();
+                        if (data.age > 0) {
+                          ageController.text = data.age.toString();
                         }
 
                         /// 🔥 ADD THIS FOR GENDER
-                        if (data.gender != null && data.gender!.isNotEmpty) {
-                          genderController.text = data.gender!;
+                        if (data.gender.isNotEmpty) {
+                          genderController.text = data.gender;
                         }
                       },
                     ),
@@ -98,13 +138,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     builder: (_) => AadharScannerScreen(
                       isFront: false,
                       onDataExtracted: (data) {
-                        if (data.houseName != null &&
-                            data.houseName!.isNotEmpty) {
-                          housenameController.text = data.houseName!;
+                        if (data.houseName.isNotEmpty) {
+                          housenameController.text = data.houseName;
                         }
 
-                        if (data.pincode != null && data.pincode!.isNotEmpty) {
-                          pinController.text = data.pincode!;
+                        if (data.pincode.isNotEmpty) {
+                          pinController.text = data.pincode;
                         }
                       },
                     ),
@@ -200,25 +239,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             /// REGISTER BUTTON
             ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty &&
-                    phoneController.text.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OTPVerificationScreen(
-                        phone: phoneController.text.trim(),
-                        fromLogin: false,
-                      ),
-                    ),
-                  );
-                }
-              },
+              onPressed: isLoading ? null : _registerSenior,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 minimumSize: const Size(double.infinity, 50),
               ),
-              child: const Text("Register"),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : const Text("Register"),
             ),
 
             const SizedBox(height: 20),

@@ -1,11 +1,12 @@
-// lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'register.dart';
-import 'user.dart';
+import 'package:senior_citizen_app/screens/admin.dart';
+import 'package:senior_citizen_app/screens/register.dart';
+import 'package:senior_citizen_app/screens/user.dart';
+import 'package:senior_citizen_app/screens/volunteer.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class SplashScreen extends StatefulWidget {
-  final bool isRegistered;
-  const SplashScreen({super.key, required this.isRegistered});
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -19,19 +20,35 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _goNext() async {
-    await Future.delayed(const Duration(seconds: 2)); // small splash delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    final loggedIn = await ApiService.isLoggedIn();
+    final role = await ApiService.getRole();
 
     if (!mounted) return;
 
-    if (widget.isRegistered) {
+    if (!loggedIn) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const CitizenDashboard()),
+        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+      );
+      return;
+    }
+
+    if (role == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminDashboard()),
+      );
+    } else if (role == 'volunteer') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        MaterialPageRoute(builder: (_) => const CitizenDashboard()),
       );
     }
   }
@@ -41,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
     return const Scaffold(
       body: Center(
         child: Text(
-          "SeniorConnect",
+          'SeniorConnect',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,

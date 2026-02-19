@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
 class VolunteerRegisterScreen extends StatefulWidget {
   const VolunteerRegisterScreen({super.key});
@@ -16,6 +17,41 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   final wardController = TextEditingController();
   final panchayatController = TextEditingController();
   final occupationController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> _registerVolunteer() async {
+    final name = nameController.text.trim();
+    final phone = phoneController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty) return;
+
+    setState(() => isLoading = true);
+    try {
+      await ApiService.registerVolunteer(
+        name: name,
+        phone: phone,
+        occupation: occupationController.text.trim(),
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OTPVerificationScreen(
+            phone: phone,
+            flow: OtpFlow.volunteerRegister,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +100,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
             const SizedBox(height: 15),
 
             ElevatedButton(
-              onPressed: () {
-                if (phoneController.text.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OTPVerificationScreen(
-                        phone: phoneController.text.trim(),
-                        fromLogin: false,
-                        // Mark as volunteer registration
-                      ),
-                    ),
-                  );
-                }
-              },
+              onPressed: isLoading ? null : _registerVolunteer,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 minimumSize: const Size(double.infinity, 50),
@@ -85,10 +108,19 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                "Register",
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : const Text(
+                      "Register",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
             ),
             const SizedBox(height: 20),
           ],
