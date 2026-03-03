@@ -3,7 +3,9 @@ import 'package:senior_citizen_app/screens/admin.dart';
 import 'package:senior_citizen_app/screens/register.dart';
 import 'package:senior_citizen_app/screens/user.dart';
 import 'package:senior_citizen_app/screens/volunteer.dart';
+import 'package:senior_citizen_app/screens/ambulance.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
+import 'package:senior_citizen_app/services/push_notification_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,16 +38,25 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (role == 'admin') {
+      await PushNotificationService.syncVolunteerDeviceToken();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const AdminDashboard()),
       );
     } else if (role == 'volunteer') {
+      await PushNotificationService.syncVolunteerDeviceToken();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
       );
+    } else if (role == 'ambulance') {
+      await PushNotificationService.syncVolunteerDeviceToken();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AmbulanceDashboard()),
+      );
     } else {
+      await PushNotificationService.syncVolunteerDeviceToken();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const CitizenDashboard()),

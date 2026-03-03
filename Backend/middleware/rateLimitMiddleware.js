@@ -7,6 +7,10 @@ function createRateLimiter({
   message = "Too many requests. Try again later."
 } = {}) {
   return (req, res, next) => {
+    if ((process.env.RATE_LIMIT_DISABLED || "").toLowerCase() === "true") {
+      return next();
+    }
+
     const key = keyFn(req);
     const now = Date.now();
 

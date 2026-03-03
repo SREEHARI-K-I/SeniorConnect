@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:senior_citizen_app/services/api_service.dart';
 
 class VolunteerRequestsScreen extends StatefulWidget {
@@ -51,6 +53,22 @@ class _VolunteerRequestsScreenState extends State<VolunteerRequestsScreen> {
     }
   }
 
+  Uint8List? _decodePhoto(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final value = raw.trim();
+      if (value.startsWith('data:image')) {
+        final parts = value.split(',');
+        if (parts.length == 2) {
+          return base64Decode(parts[1]);
+        }
+      }
+      return base64Decode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +90,9 @@ class _VolunteerRequestsScreenState extends State<VolunteerRequestsScreen> {
                 itemBuilder: (context, index) {
                   final volunteer = volunteers[index];
                   final int userId = volunteer['id'] as int;
+                  final photoBytes = _decodePhoto(
+                    volunteer['profile_photo']?.toString(),
+                  );
                   return Card(
                     elevation: 3,
                     margin: const EdgeInsets.only(bottom: 16),
@@ -83,6 +104,23 @@ class _VolunteerRequestsScreenState extends State<VolunteerRequestsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Center(
+                            child: CircleAvatar(
+                              radius: 32,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: photoBytes != null
+                                  ? MemoryImage(photoBytes)
+                                  : null,
+                              child: photoBytes == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 34,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           Text(
                             'Name: ${volunteer['name'] ?? '-'}',
                             style: const TextStyle(

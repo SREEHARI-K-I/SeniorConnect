@@ -81,16 +81,45 @@ class AadharScannerService {
   }
 
   int _extractAge(String text) {
-    if (!text.toLowerCase().contains("dob")) {
-      return 0; // Back side won’t change age
-    }
-    RegExp dobRegex = RegExp(r'\d{2}/\d{2}/\d{4}');
-    Match? match = dobRegex.firstMatch(text);
+    final normalized = text.replaceAll(RegExp(r'[oO]'), '0');
+    final nowYear = DateTime.now().year;
 
-    if (match != null) {
-      String dob = match.group(0)!;
-      int birthYear = int.parse(dob.split('/')[2]);
-      return DateTime.now().year - birthYear;
+    int ageFromYear(int year) {
+      final age = nowYear - year;
+      if (age < 1 || age > 120) return 0;
+      return age;
+    }
+
+    // Aadhaar common format: dd/mm/yyyy
+    final dobDate = RegExp(r'\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})\b')
+        .firstMatch(normalized);
+    if (dobDate != null) {
+      final year = int.tryParse(dobDate.group(3) ?? '');
+      if (year != null) {
+        final age = ageFromYear(year);
+        if (age > 0) return age;
+      }
+    }
+
+    final yob = RegExp(
+      r'(year\s*of\s*birth|yob|birth\s*year)\s*[:\-]?\s*(19\d{2}|20\d{2})',
+      caseSensitive: false,
+    ).firstMatch(normalized);
+    if (yob != null) {
+      final year = int.tryParse(yob.group(2) ?? '');
+      if (year != null) {
+        final age = ageFromYear(year);
+        if (age > 0) return age;
+      }
+    }
+
+    final ageMatch = RegExp(
+      r'\bage\s*[:\-]?\s*(\d{1,3})\b',
+      caseSensitive: false,
+    ).firstMatch(normalized);
+    if (ageMatch != null) {
+      final age = int.tryParse(ageMatch.group(1) ?? '');
+      if (age != null && age >= 1 && age <= 120) return age;
     }
 
     return 0;

@@ -1,13 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
-class EmergencyStatusScreen extends StatelessWidget {
+class EmergencyStatusScreen extends StatefulWidget {
   final String type; // "sos" or "ambulance"
 
   const EmergencyStatusScreen({super.key, required this.type});
 
   @override
+  State<EmergencyStatusScreen> createState() => _EmergencyStatusScreenState();
+}
+
+class _EmergencyStatusScreenState extends State<EmergencyStatusScreen> {
+  bool isLoading = true;
+  String statusMessage = "Sending emergency alert...";
+  String detailMessage = "";
+  Color iconColor = Colors.red;
+  IconData iconData = Icons.warning_rounded;
+
+  @override
+  void initState() {
+    super.initState();
+    _sendEmergency();
+  }
+
+  Future<Position> _getCurrentPosition() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception("Location service is disabled");
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      throw Exception("Location permission denied");
+    }
+
+    return Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  }
+
+  Future<void> _sendEmergency() async {
+    final isAmbulance = widget.type == "ambulance";
+
+    setState(() {
+      iconData = isAmbulance ? Icons.local_hospital : Icons.warning_rounded;
+      iconColor = isAmbulance ? Colors.deepOrange : Colors.red;
+    });
+
+    try {
+      final pos = await _getCurrentPosition();
+      final response = await ApiService.sendEmergencyAlert(
+        type: widget.type,
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+      );
+
+      final assigned = response["assigned_volunteer"];
+      final volunteerLine = assigned is Map<String, dynamic>
+          ? "Responder: ${assigned["name"] ?? "-"} (${assigned["distance_km"] ?? "-"} km away)"
+          : "No active nearby responder. Alert is recorded for dispatch.";
+
+      if (!mounted) return;
+      setState(() {
+        statusMessage = isAmbulance
+            ? "Emergency Medical Request Sent"
+            : "SOS Alert Activated";
+        detailMessage = volunteerLine;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        statusMessage = "Emergency alert failed";
+        detailMessage = e.toString().replaceFirst("Exception: ", "");
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isAmbulance = type == "ambulance";
+    final isAmbulance = widget.type == "ambulance";
 
     return Scaffold(
       appBar: AppBar(
@@ -21,16 +97,20 @@ class EmergencyStatusScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isAmbulance ? Icons.local_hospital : Icons.warning_rounded,
+              iconData,
               size: 100,
-              color: isAmbulance ? Colors.deepOrange : Colors.red,
+              color: iconColor,
             ),
             const SizedBox(height: 30),
 
+            if (isLoading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: CircularProgressIndicator(),
+              ),
+
             Text(
-              isAmbulance
-                  ? "Emergency Medical Request Sent"
-                  : "SOS Alert Activated",
+              statusMessage,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -38,9 +118,9 @@ class EmergencyStatusScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             Text(
-              isAmbulance
-                  ? "Nearby medical services and volunteers are being notified. Your location has been shared for quick response."
-                  : "Nearby volunteers and administrators are notified immediately. Please stay calm.",
+              isLoading
+                  ? "Getting your current location and notifying nearest responder."
+                  : detailMessage,
               style: const TextStyle(fontSize: 16, color: Colors.black87),
               textAlign: TextAlign.center,
             ),

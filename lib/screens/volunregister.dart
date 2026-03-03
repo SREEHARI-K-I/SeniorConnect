@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
 
@@ -17,7 +20,40 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
   final wardController = TextEditingController();
   final panchayatController = TextEditingController();
   final occupationController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  File? _selectedPhotoFile;
+  String? _profilePhotoData;
   bool isLoading = false;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+    phoneController.dispose();
+    wardController.dispose();
+    panchayatController.dispose();
+    occupationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 55,
+      maxWidth: 720,
+    );
+    if (image == null) return;
+
+    final file = File(image.path);
+    final bytes = await file.readAsBytes();
+    final encoded = base64Encode(bytes);
+
+    if (!mounted) return;
+    setState(() {
+      _selectedPhotoFile = file;
+      _profilePhotoData = "data:image/jpeg;base64,$encoded";
+    });
+  }
 
   Future<void> _registerVolunteer() async {
     final name = nameController.text.trim();
@@ -31,6 +67,7 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
         name: name,
         phone: phone,
         occupation: occupationController.text.trim(),
+        profilePhoto: _profilePhotoData,
       );
 
       if (!mounted) return;
@@ -67,6 +104,29 @@ class _VolunteerRegisterScreenState extends State<VolunteerRegisterScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            GestureDetector(
+              onTap: isLoading ? null : _pickPhoto,
+              child: CircleAvatar(
+                radius: 44,
+                backgroundColor: Colors.blue.shade100,
+                backgroundImage: _selectedPhotoFile != null
+                    ? FileImage(_selectedPhotoFile!)
+                    : null,
+                child: _selectedPhotoFile == null
+                    ? const Icon(
+                        Icons.add_a_photo,
+                        size: 30,
+                        color: Colors.blue,
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: isLoading ? null : _pickPhoto,
+              child: const Text("Add Volunteer Photo"),
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(labelText: "Full Name"),

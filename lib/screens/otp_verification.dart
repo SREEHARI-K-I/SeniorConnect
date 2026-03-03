@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:io';
 import 'package:senior_citizen_app/screens/admin.dart';
 import 'package:senior_citizen_app/screens/pending.dart';
 import 'package:senior_citizen_app/screens/user.dart';
 import 'package:senior_citizen_app/screens/volunteer.dart';
+import 'package:senior_citizen_app/screens/ambulance.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
+import 'package:senior_citizen_app/services/push_notification_service.dart';
 
 enum OtpFlow { seniorRegister, volunteerRegister, userLogin, adminLogin }
 
@@ -25,6 +29,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final otpController = TextEditingController();
   bool isLoading = false;
 
+  String _platform() {
+    if (Platform.isIOS) return "ios";
+    if (Platform.isAndroid) return "android";
+    return "web";
+  }
+
   bool get _isLoginFlow =>
       widget.flow == OtpFlow.userLogin || widget.flow == OtpFlow.adminLogin;
 
@@ -37,7 +47,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     try {
       if (widget.flow == OtpFlow.seniorRegister ||
           widget.flow == OtpFlow.volunteerRegister) {
-        await ApiService.verifyRegisterOtp(phone: widget.phone, otp: otp);
+        final token = await FirebaseMessaging.instance.getToken();
+        await ApiService.verifyRegisterOtp(
+          phone: widget.phone,
+          otp: otp,
+          deviceToken: token,
+          platform: _platform(),
+        );
+        await ApiService.clearSession();
 
         if (!mounted) return;
         Navigator.pushAndRemoveUntil(
@@ -56,6 +73,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       final role = (response["role"] ?? "").toString();
       final name = (response["name"] ?? "").toString();
       final status = response["status"]?.toString();
+      final profilePhoto = response["profile_photo"]?.toString();
 
       await ApiService.saveSession(
         token: token,
@@ -63,7 +81,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         name: name,
         phone: widget.phone,
         status: status,
+        profilePhoto: profilePhoto,
       );
+
+      if (role == "volunteer" || role == "senior" || role == "admin") {
+        await PushNotificationService.syncVolunteerDeviceToken();
+      }
 
       if (!mounted) return;
       if (role == "admin") {
@@ -76,6 +99,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const VolunteerDashboard()),
+          (_) => false,
+        );
+      } else if (role == "ambulance") {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AmbulanceDashboard()),
           (_) => false,
         );
       } else {

@@ -4,6 +4,7 @@ import 'package:senior_citizen_app/screens/request_status.dart';
 import 'package:senior_citizen_app/screens/volunavail.dart';
 import 'package:senior_citizen_app/screens/emergency_status.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
+import 'package:senior_citizen_app/services/push_notification_service.dart';
 
 class CitizenDashboard extends StatelessWidget {
   const CitizenDashboard({super.key});
@@ -20,6 +21,7 @@ class CitizenDashboard extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
+              await PushNotificationService.removeVolunteerDeviceToken();
               await ApiService.clearSession();
               if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
@@ -142,7 +144,9 @@ class CitizenDashboard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AvailableVolunteersScreen()),
+          MaterialPageRoute(
+            builder: (_) => AvailableVolunteersScreen(category: label),
+          ),
         );
       },
       child: Container(

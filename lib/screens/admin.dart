@@ -5,6 +5,7 @@ import 'package:senior_citizen_app/screens/volunrequest.dart';
 import 'package:senior_citizen_app/screens/volunteerlist.dart';
 import 'package:senior_citizen_app/screens/userlist.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
+import 'package:senior_citizen_app/services/push_notification_service.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -158,26 +159,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   _actionTile(
                     title: "Citizens",
                     icon: Icons.people,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const AllUsersScreen(),
                         ),
                       );
+                      _loadStats();
                     },
                   ),
 
                   _actionTile(
                     title: "Volunteers",
                     icon: Icons.group,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const AllVolunteersScreen(),
                         ),
                       );
+                      _loadStats();
                     },
                   ),
 
@@ -186,6 +189,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   /// 🚪 LOGOUT BUTTON
                   ElevatedButton(
                     onPressed: () async {
+                      await PushNotificationService.removeVolunteerDeviceToken();
                       await ApiService.clearSession();
                       if (!context.mounted) return;
                       Navigator.pushAndRemoveUntil(

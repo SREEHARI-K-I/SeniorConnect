@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final wardController = TextEditingController();
   final houseController = TextEditingController();
   final healthController = TextEditingController();
+  final occupationController = TextEditingController();
   final pinController = TextEditingController();
   final housenameController = TextEditingController();
   bool isLoading = false;
@@ -34,6 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     wardController.dispose();
     houseController.dispose();
     healthController.dispose();
+    occupationController.dispose();
     pinController.dispose();
     housenameController.dispose();
     super.dispose();
@@ -42,22 +44,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _registerSenior() async {
     final name = nameController.text.trim();
     final phone = phoneController.text.trim();
+    final age = ageController.text.trim();
+    final gender = genderController.text.trim();
+    final ward = wardController.text.trim();
+    final panchayat = panchayatController.text.trim();
+    final houseNumber = houseController.text.trim();
+    final houseName = housenameController.text.trim();
+    final pincode = pinController.text.trim();
 
     if (name.isEmpty || phone.isEmpty) return;
+    if (age.isEmpty ||
+        gender.isEmpty ||
+        ward.isEmpty ||
+        panchayat.isEmpty ||
+        houseNumber.isEmpty ||
+        houseName.isEmpty ||
+        pincode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Fill age, gender, ward, panchayat, house number, house name and pincode",
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() => isLoading = true);
     try {
       await ApiService.registerSenior(
         name: name,
         phone: phone,
-        age: ageController.text.trim(),
-        gender: genderController.text.trim(),
-        ward: wardController.text.trim(),
-        panchayat: panchayatController.text.trim(),
-        houseNumber: houseController.text.trim(),
-        houseName: housenameController.text.trim(),
-        pincode: pinController.text.trim(),
+        age: age,
+        gender: gender,
+        ward: ward,
+        panchayat: panchayat,
+        houseNumber: houseNumber,
+        houseName: houseName,
+        pincode: pincode,
         healthIssues: healthController.text.trim(),
+        occupation: occupationController.text.trim(),
       );
 
       if (!mounted) return;
@@ -233,6 +259,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 labelText: "Health Issues (if any)",
               ),
               maxLines: 2,
+            ),
+
+            const SizedBox(height: 15),
+
+            TextField(
+              controller: occupationController,
+              decoration: const InputDecoration(labelText: "Occupation"),
             ),
 
             const SizedBox(height: 30),

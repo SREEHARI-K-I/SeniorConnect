@@ -5,6 +5,10 @@ const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const requestRoutes = require("./routes/requestRoutes");
+const volunteerRoutes = require("./routes/volunteerRoutes");
+const ambulanceRoutes = require("./routes/ambulanceRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const { runMigrations } = require("./config/migrations");
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 24) {
@@ -43,10 +47,14 @@ app.use(cors({
   }
 }));
 
-app.use(express.json({ limit: "32kb" }));
+app.use(express.json({ limit: "2mb" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/requests", requestRoutes);
+app.use("/api/volunteer", volunteerRoutes);
+app.use("/api/ambulance", ambulanceRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Senior Connect Backend Running");

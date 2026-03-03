@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:senior_citizen_app/services/api_service.dart';
 
 class AllVolunteersScreen extends StatefulWidget {
@@ -42,6 +44,22 @@ class _AllVolunteersScreenState extends State<AllVolunteersScreen> {
     return status[0].toUpperCase() + status.substring(1);
   }
 
+  Uint8List? _decodePhoto(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final value = raw.trim();
+      if (value.startsWith('data:image')) {
+        final parts = value.split(',');
+        if (parts.length == 2) {
+          return base64Decode(parts[1]);
+        }
+      }
+      return base64Decode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,12 +87,24 @@ class _AllVolunteersScreenState extends State<AllVolunteersScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.green,
-                        child: Icon(
-                          Icons.volunteer_activism,
-                          color: Colors.white,
-                        ),
+                      leading: Builder(
+                        builder: (_) {
+                          final bytes = _decodePhoto(
+                            volunteer['profile_photo']?.toString(),
+                          );
+                          if (bytes == null) {
+                            return const CircleAvatar(
+                              backgroundColor: Colors.green,
+                              child: Icon(
+                                Icons.volunteer_activism,
+                                color: Colors.white,
+                              ),
+                            );
+                          }
+                          return CircleAvatar(
+                            backgroundImage: MemoryImage(bytes),
+                          );
+                        },
                       ),
                       title: Text(
                         (volunteer['name'] ?? '-').toString(),
@@ -105,18 +135,36 @@ class _AllVolunteersScreenState extends State<AllVolunteersScreen> {
   }
 
   void _showReportDialog(BuildContext context, Map<String, dynamic> volunteer) {
+    final bytes = _decodePhoto(volunteer['profile_photo']?.toString());
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text((volunteer['name'] ?? 'Volunteer').toString()),
-        content: Text(
-          'Phone: ${volunteer['phone'] ?? '-'}\n'
-          'Age: ${volunteer['age'] ?? '-'}\n'
-          'Gender: ${volunteer['gender'] ?? '-'}\n'
-          'Ward: ${volunteer['ward'] ?? '-'}\n'
-          'Panchayat: ${volunteer['panchayat'] ?? '-'}\n'
-          'Occupation: ${volunteer['occupation'] ?? '-'}\n'
-          'Status: ${_statusLabel(volunteer)}',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: CircleAvatar(
+                radius: 34,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: bytes != null ? MemoryImage(bytes) : null,
+                child: bytes == null
+                    ? const Icon(Icons.person, size: 36, color: Colors.grey)
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Phone: ${volunteer['phone'] ?? '-'}\n'
+              'Age: ${volunteer['age'] ?? '-'}\n'
+              'Gender: ${volunteer['gender'] ?? '-'}\n'
+              'Ward: ${volunteer['ward'] ?? '-'}\n'
+              'Panchayat: ${volunteer['panchayat'] ?? '-'}\n'
+              'Occupation: ${volunteer['occupation'] ?? '-'}\n'
+              'Status: ${_statusLabel(volunteer)}',
+            ),
+          ],
         ),
         actions: [
           TextButton(

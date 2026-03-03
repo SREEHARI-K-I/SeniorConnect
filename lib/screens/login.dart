@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:senior_citizen_app/screens/admin_login.dart';
 import 'package:senior_citizen_app/screens/otp_verification.dart';
+import 'package:senior_citizen_app/screens/register.dart';
 import 'package:senior_citizen_app/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -125,6 +126,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   side: const BorderSide(color: Colors.blue),
                 ),
                 child: const Text("Admin Login"),
+              ),
+
+              const SizedBox(height: 10),
+
+              TextButton(
+                onPressed: isLoading
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                child: const Text("Go to Register"),
               ),
             ],
           ),

@@ -1,57 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:senior_citizen_app/services/api_service.dart';
 
-class VolunteerActivityHistory extends StatelessWidget {
+class VolunteerActivityHistory extends StatefulWidget {
   const VolunteerActivityHistory({super.key});
+
+  @override
+  State<VolunteerActivityHistory> createState() =>
+      _VolunteerActivityHistoryState();
+}
+
+class _VolunteerActivityHistoryState extends State<VolunteerActivityHistory> {
+  bool isLoading = true;
+  List<Map<String, dynamic>> history = <Map<String, dynamic>>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => isLoading = true);
+    try {
+      final data = await ApiService.getVolunteerHistory();
+      if (!mounted) return;
+      setState(() => history = data);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text("Activity History"),
+        title: const Text('Activity History'),
         centerTitle: true,
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          activityCard(
-            title: "Grocery Assistance",
-            date: "12 Aug 2025",
-            location: "Kochi",
-            icon: Icons.shopping_cart,
-          ),
-          activityCard(
-            title: "Hospital Visit Help",
-            date: "05 Aug 2025",
-            location: "Ernakulam",
-            icon: Icons.local_hospital,
-          ),
-          activityCard(
-            title: "Medicine Pickup",
-            date: "29 Jul 2025",
-            location: "Aluva",
-            icon: Icons.local_pharmacy,
-          ),
-          activityCard(
-            title: "Home Cleaning Support",
-            date: "18 Jul 2025",
-            location: "Thrissur",
-            icon: Icons.cleaning_services,
-          ),
-        ],
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : history.isEmpty
+          ? const Center(child: Text('No completed/rejected activities yet'))
+          : RefreshIndicator(
+              onRefresh: _loadHistory,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final item = history[index];
+                  final status = (item['status'] ?? '').toString();
+                  return _activityCard(
+                    title: (item['category'] ?? '-').toString(),
+                    date: (item['completed_at'] ?? item['created_at'] ?? '-')
+                        .toString()
+                        .split(' ')
+                        .first,
+                    location:
+                        'Ward ${item['ward'] ?? '-'}, ${item['panchayat'] ?? '-'}',
+                    status: status,
+                  );
+                },
+              ),
+            ),
     );
   }
 
-  /// SIMPLE CARD FUNCTION (not reusable widget class)
-  Widget activityCard({
+  Widget _activityCard({
     required String title,
     required String date,
     required String location,
-    required IconData icon,
+    required String status,
   }) {
+    final isCompleted = status == 'completed';
+
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
@@ -63,7 +92,11 @@ class VolunteerActivityHistory extends StatelessWidget {
             CircleAvatar(
               radius: 26,
               backgroundColor: Colors.blue.shade100,
-              child: Icon(icon, color: Colors.blue, size: 28),
+              child: Icon(
+                isCompleted ? Icons.check_circle : Icons.cancel,
+                color: isCompleted ? Colors.green : Colors.red,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -78,15 +111,15 @@ class VolunteerActivityHistory extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text("📅 $date"),
-                  Text("📍 $location"),
+                  Text('Date: $date'),
+                  Text('Location: $location'),
                 ],
               ),
             ),
-            const Text(
-              "Completed",
+            Text(
+              status.toUpperCase(),
               style: TextStyle(
-                color: Colors.green,
+                color: isCompleted ? Colors.green : Colors.red,
                 fontWeight: FontWeight.bold,
               ),
             ),

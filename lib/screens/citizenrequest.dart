@@ -95,8 +95,12 @@ class _CitizenRequestsScreenState extends State<CitizenRequestsScreen> {
                           Text('Gender: ${senior['gender'] ?? '-'}'),
                           Text('Ward: ${senior['ward'] ?? '-'}'),
                           Text('Panchayat: ${senior['panchayat'] ?? '-'}'),
-                          Text('Pincode: ${senior['pincode'] ?? '-'}'),
+                          Text('House Number: ${senior['house_number'] ?? '-'}'),
                           Text('House: ${senior['house_name'] ?? '-'}'),
+                          Text('Pincode: ${senior['pincode'] ?? '-'}'),
+                          Text(
+                            'Health Issues: ${senior['health_issues'] ?? '-'}',
+                          ),
                           Text('Occupation: ${senior['occupation'] ?? '-'}'),
                           const SizedBox(height: 16),
                           Row(

@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { sendAccountStatusPushToUser } = require("../services/pushService");
 
 function dbQuery(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -19,7 +20,7 @@ function parseUserId(rawUserId) {
 exports.getPendingSeniors = async (req, res) => {
   try {
     const result = await dbQuery(
-      `SELECT id,name,phone,age,gender,ward,panchayat,pincode,house_name,occupation
+      `SELECT id,name,phone,age,gender,ward,panchayat,house_number,house_name,pincode,health_issues,occupation,status,is_verified
        FROM users
        WHERE status = 'pending' AND role = 'senior'
        ORDER BY id DESC`
@@ -34,7 +35,7 @@ exports.getPendingSeniors = async (req, res) => {
 exports.getPendingVolunteers = async (req, res) => {
   try {
     const result = await dbQuery(
-      `SELECT id,name,phone,age,gender,ward,panchayat,occupation
+      `SELECT id,name,phone,age,gender,ward,panchayat,occupation,profile_photo
        FROM users
        WHERE status = 'pending' AND role = 'volunteer'
        ORDER BY id DESC`
@@ -49,7 +50,7 @@ exports.getPendingVolunteers = async (req, res) => {
 exports.getAllVolunteers = async (req, res) => {
   try {
     const result = await dbQuery(
-      `SELECT id,name,phone,age,gender,ward,panchayat,occupation,status,is_verified
+      `SELECT id,name,phone,age,gender,ward,panchayat,occupation,profile_photo,status,is_verified
        FROM users
        WHERE role = 'volunteer'
        ORDER BY id DESC`
@@ -57,6 +58,21 @@ exports.getAllVolunteers = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch volunteers" });
+  }
+};
+
+// GET ALL SENIORS (citizens)
+exports.getAllUsers = async (req, res) => {
+  try {
+    const result = await dbQuery(
+      `SELECT id,name,phone,age,gender,ward,panchayat,house_number,house_name,pincode,health_issues,occupation,status,is_verified
+       FROM users
+       WHERE role = 'senior'
+       ORDER BY id DESC`
+    );
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch users" });
   }
 };
 
@@ -68,6 +84,15 @@ exports.approveUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
+    const users = await dbQuery(
+      "SELECT id, role FROM users WHERE id = ? AND role IN ('senior','volunteer') LIMIT 1",
+      [userId]
+    );
+    if (!users.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const targetUser = users[0];
+
     const result = await dbQuery(
       "UPDATE users SET status = 'approved' WHERE id = ? AND role IN ('senior','volunteer')",
       [userId]
@@ -75,6 +100,16 @@ exports.approveUser = async (req, res) => {
 
     if (!result.affectedRows) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    try {
+      await sendAccountStatusPushToUser({
+        userId: targetUser.id,
+        userRole: targetUser.role,
+        status: "approved"
+      });
+    } catch (_) {
+      // Do not fail approval for transient push delivery errors.
     }
 
     return res.json({ message: "User approved successfully" });
@@ -91,6 +126,15 @@ exports.rejectUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid user ID" });
     }
 
+    const users = await dbQuery(
+      "SELECT id, role FROM users WHERE id = ? AND role IN ('senior','volunteer') LIMIT 1",
+      [userId]
+    );
+    if (!users.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const targetUser = users[0];
+
     const result = await dbQuery(
       "UPDATE users SET status = 'rejected' WHERE id = ? AND role IN ('senior','volunteer')",
       [userId]
@@ -98,6 +142,16 @@ exports.rejectUser = async (req, res) => {
 
     if (!result.affectedRows) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    try {
+      await sendAccountStatusPushToUser({
+        userId: targetUser.id,
+        userRole: targetUser.role,
+        status: "rejected"
+      });
+    } catch (_) {
+      // Do not fail rejection for transient push delivery errors.
     }
 
     return res.json({ message: "User rejected successfully" });
